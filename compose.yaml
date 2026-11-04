@@ -1,0 +1,70 @@
+services:
+  pgsql:
+    container_name: pgsql
+    image: postgres:latest
+    restart: always
+    ports:
+     - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=portaleletro
+      - POSTGRES_DB=portaleletro
+      - POSTGRES_USER=admin
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+  api:
+    container_name: api
+    build:
+      context: ./API
+      dockerfile: Dockerfile.dev
+    depends_on:
+      pgsql:
+        condition: service_healthy
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: pgsql
+      DB_PORT: 5432
+      DB_DATABASE: portaleletro
+      DB_USERNAME: admin
+      DB_PASSWORD: portaleletro
+    expose:
+      - "8000"
+    volumes:
+      - ./API:/app
+      - api_vendor:/app/vendor
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') === false ? 1 : 0);"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./FrontEnd
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+
+  proxy:
+    container_name: proxy
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    depends_on:
+      api:
+        condition: service_started
+      frontend:
+        condition: service_started
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  api_vendor:
