@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('shopping_cart', function(Blueprint $table){
+        Schema::create('shopping_carts', function(Blueprint $table){
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
             $table->uuid('guest_token')->nullable();
@@ -20,7 +20,7 @@ return new class extends Migration
         });
 
         DB::statement('
-            ALTER TABLE shopping_cart 
+            ALTER TABLE shopping_carts
             ADD CONSTRAINT chk_userid_xor_guesttoken
             CHECK (
                 (user_id IS NOT NULL AND guest_token IS NULL) OR 
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('shopping_cart');
+        Schema::dropIfExists('shopping_carts');
     }
 };
