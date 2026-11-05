@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('sku')->unique();
             $table->string('name');
             $table->text('about')->nullable();
-            $table->json('specs')->nullable();
+            $table->jsonb('specs')->nullable();
             $table->decimal('price', 8, 2);
             $table->unsignedInteger('stock');
             $table->decimal('rating', 2, 1)->nullable();

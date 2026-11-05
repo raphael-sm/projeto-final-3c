@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -54,9 +55,9 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class, 'role');
     }
 
-    public function shoppingCarts(): HasMany
+    public function shoppingCart(): HasOne
     {
-        return $this->hasMany(ShoppingCart::class);
+        return $this->hasOne(ShoppingCart::class);
     }
 
     public function orders(): HasMany
