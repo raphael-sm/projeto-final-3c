@@ -18,7 +18,7 @@ class ProductController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json(ProductResource::collection($this->service->all()));
+        return response()->json(ProductResource::collection($this->service->all()->load('images')));
     }
 
     public function store(StoreProductRequest $request): JsonResponse
@@ -31,6 +31,7 @@ class ProductController extends Controller
     public function show(int|string $id): JsonResponse
     {
         $product = $this->service->find($id);
+        $product->load('images');
 
         return response()->json(new ProductResource($product));
     }

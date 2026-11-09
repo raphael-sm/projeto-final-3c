@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CategorySeeder extends Seeder
 {
@@ -25,19 +26,17 @@ class CategorySeeder extends Seeder
 
         foreach ([
             self::MICROCONTROLLERS,
-            self::SENSORS,
             self::MOTORS,
             self::MODULES,
             self::PROTOTYPING,
             self::IOT,
             self::TOOLS,
-            self::TDPRINT,
             self::KITS,
-            self::DISPLAYS,
             self::ROBOTICS
         ] as $name) {
             DB::table('categories')->insert([
                 'name' => $name,
+                'slug' => Str::slug($name),
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);

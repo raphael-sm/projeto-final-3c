@@ -22,7 +22,8 @@ class ProductSeeder extends Seeder
         foreach ($this->catalog() as $categoryName => $products) {
             foreach ($products as $row) {
                 // Cada linha: [sku, nome, descrição, specs, preço, estoque, avaliação, inativo?]
-                [$sku, $name, $about, $specs, $price, $stock, $rating, $inactive] = $row + [7 => false];
+                $row += [4 => 0.0, 5 => 0, 6 => null, 7 => false];
+                [$sku, $name, $about, $specs, $price, $stock, $rating, $inactive] = $row;
 
                 DB::table('products')->insert([
                     'category_id' => $categories[$categoryName],
@@ -30,6 +31,7 @@ class ProductSeeder extends Seeder
                     'name' => $name,
                     'about' => $about,
                     'specs' => json_encode($specs),
+                    'manufacturer' => $this->manufacturerFor($sku, $specs),
                     'price' => $price,
                     'stock' => $stock,
                     'rating' => $rating,
@@ -39,6 +41,19 @@ class ProductSeeder extends Seeder
                 ]);
             }
         }
+    }
+
+    /** Fabricante inferido do SKU/chip para popular o filtro da loja. */
+    private function manufacturerFor(string $sku, array $specs): string
+    {
+        return match (true) {
+            str_contains($sku, 'ESP') => 'Espressif',
+            str_contains($sku, 'STM32') || in_array($specs['microcontrolador'] ?? '', ['STM32F103C8T6'], true) => 'STMicroelectronics',
+            str_contains($sku, 'RPI') || str_contains($sku, 'RP2040') => 'Raspberry Pi',
+            in_array($specs['microcontrolador'] ?? '', ['ATmega328P', 'ATmega2560'], true) => 'Arduino (compatível)',
+            str_starts_with($sku, 'DRV-') || str_contains($sku, 'TB6612') || str_contains($sku, 'A4988') || str_contains($sku, 'L298N') => 'Genérico',
+            default => 'Genérico',
+        };
     }
 
     private function catalog(): array
@@ -55,7 +70,7 @@ class ProductSeeder extends Seeder
                 ['MCU-PROMINI-5V', 'Arduino Pro Mini 5V 16MHz', 'Placa minúscula sem conector USB, indicada para projetos embarcados de baixo consumo.', ['microcontrolador' => 'ATmega328P', 'tensao' => '5V', 'clock' => '16MHz'], 29.90, 3, 4.1],
             ],
 
-            CategorySeeder::SENSORS => [
+            CategorySeeder::IOT => [
                 ['SEN-HCSR04', 'Sensor Ultrassônico HC-SR04', 'Mede distâncias de 2 cm a 400 cm, muito usado em robôs que desviam de obstáculos.', ['tensao' => '5V', 'alcance' => '2-400cm', 'interface' => 'Trigger/Echo'], 12.90, 300, 4.6],
                 ['SEN-DHT22', 'Sensor de Temperatura e Umidade DHT22', 'Sensor digital com boa precisão para temperatura e umidade relativa.', ['tensao' => '3.3-5V', 'temperatura' => '-40 a 80°C', 'umidade' => '0-100%'], 34.90, 75, 4.5],
                 ['SEN-DHT11', 'Sensor de Temperatura e Umidade DHT11', 'Opção econômica para medir temperatura e umidade em projetos simples.', ['tensao' => '3.3-5V', 'temperatura' => '0 a 50°C', 'umidade' => '20-90%'], 14.90, 180, 4.0],
@@ -96,11 +111,6 @@ class ProductSeeder extends Seeder
                 ['KIT-HOLDER-18650-2X', 'Suporte para 2 Baterias 18650', 'Suporte com fios para alimentar projetos com duas células 18650.', ['baterias' => 2, 'tipo' => '18650'], 8.90, 175, null],
                 ['KIT-MULTIMETRO-DT830B', 'Multímetro Digital DT830B', 'Multímetro básico para medir tensão, corrente e resistência.', ['display' => 'LCD 3½ dígitos', 'funcoes' => ['Tensão', 'Corrente', 'Resistência']], 49.90, 20, 4.3],
                 ['KIT-CHASSI-2WD', 'Kit Chassi Robô 2WD', 'Chassi em acrílico com 2 motores, rodas e roda boba para robôs móveis.', ['motores' => 2, 'tracao' => '2WD', 'material' => 'Acrílico'], 79.90, 35, 4.4],
-            ],
-
-            CategorySeeder::IOT => [
-                ['SENS-UM-DHT11', 'Sensor de Umidade DHT-11', 'Sensor de Umidade com pinos pré-soldados.', ['dimensões' => '23mm x 12mm x 5mm', 'precisão' => '±5,0%']],
-                ['SENS-US-HCSR04', 'Sensor de Distância HC-SR04', 'Sensor de distância ultrassônico', ['dimensões' => '45mm x 20mm x 15mm', 'distância máxima' => '400cm']]
             ],
         ];
     }

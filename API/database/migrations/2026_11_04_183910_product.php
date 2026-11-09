@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('price', 8, 2);
             $table->unsignedInteger('stock');
             $table->decimal('rating', 2, 1)->nullable();
-            $table->string('picture');
+            $table->string('picture')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

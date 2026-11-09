@@ -14,6 +14,7 @@ class Product extends Model
         'name',
         'about',
         'specs',
+        'manufacturer',
         'price',
         'stock',
         'rating',
@@ -23,6 +24,11 @@ class Product extends Model
     protected $casts = [
         'specs' => 'array'
     ];
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('position');
+    }
 
     public function category(): BelongsTo
     {
