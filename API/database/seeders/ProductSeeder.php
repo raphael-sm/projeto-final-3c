@@ -97,6 +97,11 @@ class ProductSeeder extends Seeder
                 ['KIT-MULTIMETRO-DT830B', 'Multímetro Digital DT830B', 'Multímetro básico para medir tensão, corrente e resistência.', ['display' => 'LCD 3½ dígitos', 'funcoes' => ['Tensão', 'Corrente', 'Resistência']], 49.90, 20, 4.3],
                 ['KIT-CHASSI-2WD', 'Kit Chassi Robô 2WD', 'Chassi em acrílico com 2 motores, rodas e roda boba para robôs móveis.', ['motores' => 2, 'tracao' => '2WD', 'material' => 'Acrílico'], 79.90, 35, 4.4],
             ],
+
+            CategorySeeder::IOT => [
+                ['SENS-UM-DHT11', 'Sensor de Umidade DHT-11', 'Sensor de Umidade com pinos pré-soldados.', ['dimensões' => '23mm x 12mm x 5mm', 'precisão' => '±5,0%']],
+                ['SENS-US-HCSR04', 'Sensor de Distância HC-SR04', 'Sensor de distância ultrassônico', ['dimensões' => '45mm x 20mm x 15mm', 'distância máxima' => '400cm']]
+            ],
         ];
     }
 }

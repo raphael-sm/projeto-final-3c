@@ -3,59 +3,51 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
+use App\Http\Resources\ProductResource;
+use App\Services\ProductService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(private ProductService $service)
     {
-        $products = Product::all();
-
-        return response()->json($products);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function index(): JsonResponse
     {
-        $product = Product::create($request->all());
-
-        return response()->json($product, 201);
+        return response()->json(ProductResource::collection($this->service->all()));
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(StoreProductRequest $request): JsonResponse
     {
-        $product = Product::findOrFail($id);
+        $product = $this->service->create($request->validated());
 
-        return response()->json($product);
+        return response()->json(new ProductResource($product), Response::HTTP_CREATED);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function show(int|string $id): JsonResponse
     {
-        $product = Product::findOrFail($id);
-        $product->update($request->all());
+        $product = $this->service->find($id);
 
-        return response()->json($product);
+        return response()->json(new ProductResource($product));
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function update(UpdateProductRequest $request, int|string $id): JsonResponse
     {
-        $product = Product::findOrFail($id);
-        $product->delete();
+        $product = $this->service->find($id);
+        $product = $this->service->update($product, $request->validated());
+
+        return response()->json(new ProductResource($product));
+    }
+
+    public function destroy(int|string $id): Response
+    {
+        $product = $this->service->find($id);
+
+        $this->service->delete($product);
 
         return response()->noContent();
     }

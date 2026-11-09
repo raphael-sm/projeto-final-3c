@@ -3,47 +3,52 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
+use App\Services\CategoryService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(private CategoryService $service)
     {
-        //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function index(): JsonResponse
     {
-        //
+        return response()->json(CategoryResource::collection($this->service->all()));
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(StoreCategoryRequest $request): JsonResponse
     {
-        //
+        $category = $this->service->create($request->validated());
+
+        return response()->json(new CategoryResource($category), Response::HTTP_CREATED);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function show(int|string $id): JsonResponse
     {
-        //
+        $category = $this->service->find($id);
+
+        return response()->json(new CategoryResource($category));
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function update(UpdateCategoryRequest $request, int|string $id): JsonResponse
     {
-        //
+        $category = $this->service->find($id);
+        $category = $this->service->update($category, $request->validated());
+
+        return response()->json(new CategoryResource($category));
+    }
+
+    public function destroy(int|string $id): Response
+    {
+        $category = $this->service->find($id);
+
+        $this->service->delete($category);
+
+        return response()->noContent();
     }
 }
