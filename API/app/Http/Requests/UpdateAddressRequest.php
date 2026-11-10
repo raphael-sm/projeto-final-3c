@@ -6,9 +6,9 @@ class UpdateAddressRequest extends StoreAddressRequest
 {
     public function rules(): array
     {
+        // user_id is ignored: an address can never be reassigned to another user (LGPD).
         return [
-            'user_id' => ['sometimes', 'required', 'integer', 'exists:users,id'],
-            'address' => ['sometimes', 'required', 'string'],
+            'address' => ['sometimes', 'required', 'string', 'max:500'],
         ];
     }
 }

@@ -13,9 +13,9 @@ class StoreAddressRequest extends FormRequest
 
     public function rules(): array
     {
+        // user_id is always taken from the authenticated user (LGPD) and never from the payload.
         return [
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'address' => ['required', 'string'],
+            'address' => ['required', 'string', 'max:500'],
         ];
     }
 }

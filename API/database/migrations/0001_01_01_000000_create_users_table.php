@@ -17,6 +17,11 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // Exactly one of cpf/cnpj; both digits-only. Nullable so the same
+            // column shape serves individuals (CPF) and companies (CNPJ).
+            $table->string('cpf', 11)->nullable()->unique();
+            $table->string('cnpj', 14)->nullable()->unique();
+            $table->date('birthday')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

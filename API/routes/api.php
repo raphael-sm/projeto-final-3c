@@ -34,8 +34,17 @@ Route::middleware('auth.optional')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('auth/me', [AuthController::class, 'me']);
+    Route::patch('auth/me', [AuthController::class, 'update']);
+    Route::put('auth/me', [AuthController::class, 'update']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
+
+    // Address management is scoped to the authenticated user (LGPD):
+    // every verb below reads/writes only the caller's own addresses.
     Route::get('addresses', [AddressController::class, 'index']);
+    Route::post('addresses', [AddressController::class, 'store']);
+    Route::put('addresses/{address}', [AddressController::class, 'update'])->whereNumber('address');
+    Route::patch('addresses/{address}', [AddressController::class, 'update'])->whereNumber('address');
+    Route::delete('addresses/{address}', [AddressController::class, 'destroy'])->whereNumber('address');
 
     // Automatic guest-cart transfer on login/registration.
     Route::post('cart/merge', [CartController::class, 'merge']);

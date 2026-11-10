@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
@@ -49,6 +50,15 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(new UserResource($request->user()->load('role')));
+        // Endpoints de dados do titular: incluem o documento sem máscara (LGPD art. 18).
+        return (new UserResource($request->user()->load('role')))->withRawDocument()->response();
+    }
+
+    /** PATCH/PUT /api/auth/me — update the authenticated user's profile. */
+    public function update(UpdateProfileRequest $request): JsonResponse
+    {
+        $user = $this->service->updateProfile($request->user(), $request->validated());
+
+        return (new UserResource($user->load('role')))->withRawDocument()->response();
     }
 }

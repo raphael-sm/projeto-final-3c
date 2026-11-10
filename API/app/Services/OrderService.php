@@ -37,13 +37,9 @@ class OrderService
         return Order::with('items.product.images')->findOrFail($id);
     }
 
-    /** Admins see all orders; regular users only their own. */
+    /** Admins see all orders; regular users only their own (LGPD scoping). */
     public function visibleTo(User $user): Collection
     {
-        if ($user->role?->name === 'admin') {
-            return $this->all();
-        }
-
         return Order::with('items.product.images')->where('user_id', $user->id)->get();
     }
 
@@ -69,7 +65,7 @@ class OrderService
      *  - product name and the chosen address are snapshotted;
      *  - stock is decremented and the cart is emptied.
      *
-     * @param  array{id?: int, address?: string}|null  $shippingAddress
+     * @param  array{id?: int, address?: string, carrier?: string, shipping_price?: float|string}|null  $shippingAddress
      *
      * @throws RuntimeException|InvalidArgumentException
      */
@@ -82,12 +78,21 @@ class OrderService
         }
 
         if ($shippingAddress !== null && isset($shippingAddress['id'])) {
-            $address = $this->addresses->find($shippingAddress['id']);
-            $this->addresses->assertOwnedBy($address, $user);
+            $address = $this->addresses->findOwnedBy($shippingAddress['id'], $user);
             $shippingAddress = ['address' => $address->address];
         }
 
-        return DB::transaction(function () use ($cart, $user, $shippingAddress) {
+        // Carrier chosen at checkout + shipping charged at purchase time.
+        $shipping = [
+            'carrier' => isset($shippingAddress['carrier']) && is_string($shippingAddress['carrier'])
+                ? $shippingAddress['carrier']
+                : null,
+            'price' => isset($shippingAddress['shipping_price'])
+                ? round((float) $shippingAddress['shipping_price'], 2)
+                : 0.0,
+        ];
+
+        return DB::transaction(function () use ($cart, $user, $shippingAddress, $shipping) {
             // Lock product rows so concurrent checkouts can't oversell the same stock.
             $products = collect();
 
@@ -110,6 +115,10 @@ class OrderService
                 'status' => 'pending_payment',
                 'user_id' => $user->id,
                 'address_snapshot' => $shippingAddress['address'] ?? null,
+                // Transportadora escolhida no checkout e o frete cobrado no momento
+                // da compra (snapshot, imune a mudanças posteriores de tabela).
+                'carrier' => $shipping['carrier'],
+                'shipping_price' => $shipping['price'],
             ]);
 
             foreach ($cart->items as $item) {

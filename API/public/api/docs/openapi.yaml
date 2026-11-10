@@ -1,0 +1,1413 @@
+openapi: 3.0.3
+info:
+  title: API da Loja
+  version: 1.0.0
+  description: Documentação gerada a partir das rotas, controllers, Form Requests, Resources, services, middleware e migrations
+    presentes no backend. A API usa tokens pessoais do Laravel Sanctum.
+servers:
+- url: /api
+  description: Mesmo host da aplicação, prefixo da API encaminhado pelo proxy.
+tags:
+- name: Autenticação
+- name: Categorias
+- name: Produtos
+- name: Imagens de produtos
+- name: Carrinho
+- name: Endereços
+- name: Checkout e pedidos
+paths:
+  /categories:
+    get:
+      summary: Lista categorias.
+      tags:
+      - Categorias
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+    post:
+      summary: Cria categoria (somente admin).
+      tags:
+      - Categorias
+      responses:
+        '201':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryEnvelope'
+        '401': &id001
+          description: Não autenticado.
+        '403': &id002
+          description: Acesso negado.
+        '422': &id004
+          description: Erro de validação (campos em `errors`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+      security: &id005
+      - sanctumBearer: []
+  /categories/{category}:
+    get:
+      summary: Exibe uma categoria.
+      tags:
+      - Categorias
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryEnvelope'
+        '404': &id003
+          description: Recurso não encontrado.
+      parameters:
+      - name: category
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+    put:
+      summary: Atualiza categoria (somente admin).
+      tags:
+      - Categorias
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateInput'
+      parameters:
+      - name: category
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+    patch:
+      summary: Atualiza categoria (somente admin).
+      tags:
+      - Categorias
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateInput'
+      parameters:
+      - name: category
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+    delete:
+      summary: Remove categoria (somente admin).
+      tags:
+      - Categorias
+      responses:
+        '204': &id006
+          description: Sem conteúdo.
+        '401': *id001
+        '403': *id002
+        '404': *id003
+      parameters:
+      - name: category
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+  /products:
+    get:
+      summary: Lista produtos com imagens associadas.
+      tags:
+      - Produtos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+    post:
+      summary: 'Cria produto (somente admin). ATENÇÃO: o Form Request não valida `category_id`, embora a migration exija esse
+        campo sem default; portanto, no estado atual, a criação tende a falhar na persistência.'
+      tags:
+      - Produtos
+      responses:
+        '201':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductEnvelope'
+        '401': *id001
+        '403': *id002
+        '422': *id004
+        '500':
+          description: Falha de persistência possível pela ausência de category_id validado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      security: *id005
+  /products/{product}:
+    get:
+      summary: Exibe um produto e suas imagens.
+      tags:
+      - Produtos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductEnvelope'
+        '404': *id003
+      parameters:
+      - name: product
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+    put:
+      summary: Atualiza produto (somente admin).
+      tags:
+      - Produtos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateInput'
+      parameters:
+      - name: product
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+    patch:
+      summary: Atualiza produto (somente admin).
+      tags:
+      - Produtos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateInput'
+      parameters:
+      - name: product
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+    delete:
+      summary: Remove produto (soft delete; somente admin).
+      tags:
+      - Produtos
+      responses:
+        '204': *id006
+        '401': *id001
+        '403': *id002
+        '404': *id003
+      parameters:
+      - name: product
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+  /products/{product}/images:
+    get:
+      summary: Lista imagens de um produto.
+      tags:
+      - Imagens de produtos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductImage'
+      parameters:
+      - name: product
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      summary: Adiciona de uma a cinco imagens ao produto (somente admin).
+      tags:
+      - Imagens de produtos
+      responses:
+        '201':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductImage'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImagesInput'
+      parameters:
+      - name: product
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+  /auth/register:
+    post:
+      summary: Registra usuário e emite token Sanctum.
+      tags:
+      - Autenticação
+      responses:
+        '201':
+          description: Usuário criado e token emitido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+  /auth/login:
+    post:
+      summary: Autentica credenciais e emite um novo token Sanctum. Tokens anteriores do usuário são revogados.
+      tags:
+      - Autenticação
+      responses:
+        '200':
+          description: Autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+  /auth/me:
+    get:
+      summary: Retorna o perfil do usuário autenticado.
+      tags:
+      - Autenticação
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+        '401': *id001
+      security:
+      - sanctumBearer: []
+    patch:
+      summary: Atualiza parcialmente o perfil autenticado.
+      tags:
+      - Autenticação
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+        '401': *id001
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateInput'
+      security:
+      - sanctumBearer: []
+    put:
+      summary: Atualiza o perfil autenticado (mesmas regras parciais do PATCH).
+      tags:
+      - Autenticação
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+        '401': *id001
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateInput'
+      security:
+      - sanctumBearer: []
+  /auth/logout:
+    post:
+      summary: Revoga o token usado nesta requisição.
+      tags:
+      - Autenticação
+      responses:
+        '204': *id006
+        '401': *id001
+      security:
+      - sanctumBearer: []
+  /cart:
+    get:
+      summary: Resolve ou cria o carrinho do visitante/usuário e retorna itens e totais.
+      tags:
+      - Carrinho
+      responses:
+        '200':
+          description: Carrinho resolvido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartSummary'
+        '422': *id004
+      description: A rota aceita visitante ou usuário autenticado. Para visitantes, envie `guest_token` quando já possuir
+        um carrinho; quando omitido, o backend gera um UUID. Com token Sanctum, resolve o carrinho do usuário.
+      parameters:
+      - name: guest_token
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      security:
+      - {}
+      - sanctumBearer: []
+    delete:
+      summary: Esvazia o carrinho resolvido.
+      tags:
+      - Carrinho
+      responses:
+        '204': *id006
+        '422': *id004
+      description: A rota aceita visitante ou usuário autenticado. Para visitantes, envie `guest_token` quando já possuir
+        um carrinho; quando omitido, o backend gera um UUID. Com token Sanctum, resolve o carrinho do usuário.
+      parameters:
+      - name: guest_token
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      security:
+      - {}
+      - sanctumBearer: []
+  /cart/items:
+    post:
+      summary: Adiciona um produto ao carrinho.
+      tags:
+      - Carrinho
+      responses:
+        '201':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemEnvelope'
+        '401': *id001
+        '422': *id004
+      description: A rota aceita visitante ou usuário autenticado. Para visitantes, envie `guest_token` quando já possuir
+        um carrinho; quando omitido, o backend gera um UUID. Com token Sanctum, resolve o carrinho do usuário.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemInput'
+      security:
+      - {}
+      - sanctumBearer: []
+  /cart/items/{item}:
+    patch:
+      summary: Altera a quantidade de um item do carrinho.
+      tags:
+      - Carrinho
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemEnvelope'
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      description: O usuário autenticado só pode alterar o próprio carrinho; administradores podem gerenciar qualquer carrinho.
+        Visitantes só podem alterar carrinhos sem usuário associado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuantityInput'
+      parameters:
+      - name: item
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - {}
+      - sanctumBearer: []
+    delete:
+      summary: Remove um item do carrinho.
+      tags:
+      - Carrinho
+      responses:
+        '204': *id006
+        '403': *id002
+        '404': *id003
+      parameters:
+      - name: item
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - {}
+      - sanctumBearer: []
+  /cart/merge:
+    post:
+      summary: Mescla o carrinho de visitante ao carrinho do usuário autenticado. Quantidades do mesmo produto são somadas.
+      tags:
+      - Carrinho
+      responses:
+        '200':
+          description: Carrinho após mesclagem.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartSummary'
+        '401': *id001
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestTokenInput'
+      security:
+      - sanctumBearer: []
+  /addresses:
+    get:
+      summary: Lista somente os endereços do usuário autenticado.
+      tags:
+      - Endereços
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Address'
+        '401': *id001
+      security:
+      - sanctumBearer: []
+    post:
+      summary: Cria endereço para o usuário autenticado (limite de quatro).
+      tags:
+      - Endereços
+      responses:
+        '201':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressEnvelope'
+        '401': *id001
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressInput'
+      security:
+      - sanctumBearer: []
+  /addresses/{address}:
+    put:
+      summary: Atualiza endereço próprio.
+      tags:
+      - Endereços
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressEnvelope'
+        '401': *id001
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressUpdateInput'
+      parameters:
+      - name: address
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sanctumBearer: []
+    patch:
+      summary: Atualiza parcialmente endereço próprio.
+      tags:
+      - Endereços
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressEnvelope'
+        '401': *id001
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressUpdateInput'
+      parameters:
+      - name: address
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sanctumBearer: []
+    delete:
+      summary: Remove endereço próprio.
+      tags:
+      - Endereços
+      responses:
+        '204': *id006
+        '401': *id001
+        '404': *id003
+      parameters:
+      - name: address
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sanctumBearer: []
+  /checkout:
+    post:
+      summary: Finaliza compra do carrinho do usuário autenticado. Cria pedido pendente, usa preço atual, baixa estoque e
+        esvazia carrinho.
+      tags:
+      - Checkout e pedidos
+      responses:
+        '201':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderEnvelope'
+        '401': *id001
+        '422':
+          description: Carrinho vazio, endereço inválido/não pertencente ao usuário ou estoque insuficiente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageError'
+      description: Pode receber `address_id` ou `address` (texto); ambos são opcionais no validador. `guest_token` pode identificar
+        o carrinho anterior à autenticação.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutInput'
+      security:
+      - sanctumBearer: []
+  /orders:
+    get:
+      summary: Lista pedidos próprios; administradores recebem todos.
+      tags:
+      - Checkout e pedidos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+        '401': *id001
+      security:
+      - sanctumBearer: []
+  /orders/{order}:
+    get:
+      summary: Exibe pedido próprio; administradores podem consultar qualquer pedido.
+      tags:
+      - Checkout e pedidos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+      parameters:
+      - name: order
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sanctumBearer: []
+    delete:
+      summary: Cancela pedido próprio; administradores podem cancelar qualquer pedido elegível. Reposição de estoque.
+      tags:
+      - Checkout e pedidos
+      responses:
+        '204': *id006
+        '401': *id001
+        '404': *id003
+        '422':
+          description: Pedido não pode ser cancelado no estado atual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageError'
+      parameters:
+      - name: order
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sanctumBearer: []
+    put:
+      summary: Avança o status do pedido (somente admin).
+      tags:
+      - Checkout e pedidos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStatusInput'
+      parameters:
+      - name: order
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sanctumBearer: []
+    patch:
+      summary: Avança o status do pedido (somente admin).
+      tags:
+      - Checkout e pedidos
+      responses:
+        '200':
+          description: Sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderEnvelope'
+        '401': *id001
+        '403': *id002
+        '404': *id003
+        '422': *id004
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStatusInput'
+      parameters:
+      - name: order
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security:
+      - sanctumBearer: []
+  /products/{product}/images/{image}:
+    delete:
+      summary: Remove imagem pertencente ao produto (somente admin).
+      tags:
+      - Imagens de produtos
+      responses:
+        '204': *id006
+        '401': *id001
+        '403': *id002
+        '404': *id003
+      parameters:
+      - name: product
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      - name: image
+        in: path
+        required: true
+        description: Identificador numérico.
+        schema:
+          type: integer
+          minimum: 1
+      security: *id005
+components:
+  securitySchemes:
+    sanctumBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum personal access token
+      description: Token retornado por POST /auth/login ou POST /auth/register. Não é cookie de sessão.
+  schemas:
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    MessageError:
+      type: object
+      properties:
+        message:
+          type: string
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    CategoryEnvelope:
+      $ref: '#/components/schemas/Category'
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: integer
+        url:
+          type: string
+        position:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        category_id:
+          type: integer
+          nullable: true
+        sku:
+          type: string
+        name:
+          type: string
+        about:
+          type: string
+          nullable: true
+        specs:
+          type: object
+          nullable: true
+          additionalProperties: true
+        price:
+          type: string
+          example: '199.90'
+        stock:
+          type: integer
+        rating:
+          type: string
+          nullable: true
+          example: '4.5'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ProductEnvelope:
+      $ref: '#/components/schemas/Product'
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        document:
+          type: string
+          description: CPF/CNPJ mascarado.
+        document_type:
+          type: string
+          enum:
+          - cpf
+          - cnpj
+          nullable: true
+        birthday:
+          type: string
+          format: date
+          nullable: true
+        role:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    UserEnvelope:
+      $ref: '#/components/schemas/User'
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: 'Token pessoal Sanctum; enviar em Authorization: Bearer <token>.'
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        address:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AddressEnvelope:
+      $ref: '#/components/schemas/Address'
+    Cart:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+          nullable: true
+        guest_token:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        cart_id:
+          type: integer
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+        price_snapshot:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CartItemEnvelope:
+      $ref: '#/components/schemas/CartItem'
+    CartSummary:
+      type: object
+      properties:
+        cart:
+          allOf:
+          - $ref: '#/components/schemas/CartEnvelope'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totals:
+          type: object
+          properties:
+            items_count:
+              type: integer
+            subtotal:
+              type: number
+    CartEnvelope:
+      $ref: '#/components/schemas/Cart'
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        order_id:
+          type: integer
+        product_id:
+          type: integer
+          nullable: true
+        name_snapshot:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum:
+          - pending_payment
+          - paid
+          - shipped
+          - delivered
+          - cancelled
+        user_id:
+          type: integer
+        address_snapshot:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        total:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    OrderEnvelope:
+      $ref: '#/components/schemas/Order'
+    LoginInput:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    RegisterInput:
+      type: object
+      required:
+      - name
+      - email
+      - password
+      - document
+      - birthday
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          format: password
+        document:
+          type: string
+          description: CPF ou CNPJ válido, pode conter pontuação.
+        birthday:
+          type: string
+          format: date
+          description: Data anterior a 18 anos atrás.
+    ProfileUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          format: password
+        document:
+          type: string
+          description: CPF ou CNPJ válido.
+        birthday:
+          type: string
+          format: date
+          description: Data anterior a 18 anos atrás.
+    AddCartItemInput:
+      type: object
+      required:
+      - product_id
+      - quantity
+      properties:
+        product_id:
+          type: integer
+          minimum: 1
+        quantity:
+          type: integer
+          minimum: 1
+        guest_token:
+          type: string
+          format: uuid
+          description: Campo aceito fora das regras explícitas do validador e lido separadamente pelo controller.
+    QuantityInput:
+      type: object
+      required:
+      - quantity
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+    GuestTokenInput:
+      type: object
+      properties:
+        guest_token:
+          type: string
+          format: uuid
+          nullable: true
+    AddressInput:
+      type: object
+      required:
+      - address
+      properties:
+        address:
+          type: string
+          maxLength: 500
+    AddressUpdateInput:
+      type: object
+      properties:
+        address:
+          type: string
+          maxLength: 500
+    CheckoutInput:
+      type: object
+      properties:
+        address_id:
+          type: integer
+          nullable: true
+        address:
+          type: string
+          maxLength: 255
+          nullable: true
+        guest_token:
+          type: string
+          format: uuid
+          nullable: true
+    OrderStatusInput:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - paid
+          - shipped
+          - delivered
+    CategoryInput:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 255
+          pattern: ^[A-Za-z0-9_-]+$
+    CategoryUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+    ProductInput:
+      type: object
+      required:
+      - sku
+      - name
+      - price
+      - stock
+      properties:
+        sku:
+          type: string
+          maxLength: 255
+        name:
+          type: string
+          maxLength: 255
+        about:
+          type: string
+          nullable: true
+        specs:
+          type: object
+          nullable: true
+          additionalProperties: true
+        price:
+          type: number
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+          nullable: true
+    ProductUpdateInput:
+      type: object
+      properties:
+        sku:
+          type: string
+          maxLength: 255
+        name:
+          type: string
+          maxLength: 255
+        about:
+          type: string
+          nullable: true
+        specs:
+          type: object
+          nullable: true
+          additionalProperties: true
+        price:
+          type: number
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+          nullable: true
+    ProductImagesInput:
+      type: object
+      required:
+      - images
+      properties:
+        images:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            type: string
+            format: binary
+        position:
+          type: integer
+          minimum: 0

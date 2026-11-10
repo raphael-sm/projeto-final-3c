@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\User;
+use App\Support\TaxId;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -29,6 +30,10 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'cpf' => TaxId::generateValidCpf(),
+            'cnpj' => null,
+            // CPF holders must have a birthday; company() state (CNPJ) clears it.
+            'birthday' => fake()->dateTimeBetween('-80 years', '-18 years')->format('Y-m-d'),
             'remember_token' => Str::random(10),
         ];
     }
@@ -40,6 +45,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /** Use a fictitious-but-valid CNPJ instead of a CPF (no birthday). */
+    public function company(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'cpf' => null,
+            'cnpj' => TaxId::generateValidCnpj(),
+            'birthday' => null, // CNPJ não tem aniversário
         ]);
     }
 }

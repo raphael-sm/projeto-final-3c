@@ -27,6 +27,9 @@ class User extends Authenticatable
         'email',
         'password',
         'role_id',
+        'cpf',
+        'cnpj',
+        'birthday',
     ];
 
     /**
@@ -37,6 +40,9 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // Raw identifiers stay out of serialization (LGPD); the resource exposes a masked version.
+        'cpf',
+        'cnpj',
     ];
 
     /**
@@ -49,6 +55,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birthday' => 'date:Y-m-d',
         ];
     }
 

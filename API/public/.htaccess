@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # Serve the documentation index directly so /api/docs returns 200 without a trailing-slash redirect.
+    RewriteRule ^api/docs$ /api/docs/index.html [END]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

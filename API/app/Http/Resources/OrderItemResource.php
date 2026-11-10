@@ -16,6 +16,8 @@ class OrderItemResource extends JsonResource
             'name_snapshot' => $this->name_snapshot,
             'quantity' => $this->quantity,
             'price' => $this->price,
+            // Produto (com imagens) para o histórico exibir a foto do comprado.
+            'product' => new ProductResource($this->whenLoaded('product')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

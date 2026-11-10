@@ -19,14 +19,17 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        DB::statement('
-            ALTER TABLE shopping_carts
-            ADD CONSTRAINT chk_userid_xor_guesttoken
-            CHECK (
-                (user_id IS NOT NULL AND guest_token IS NULL) OR
-                (user_id IS NULL AND guest_token IS NOT NULL)
-            )
-        ');
+        // SQLite cannot ADD CONSTRAINT via ALTER TABLE; enforce the XOR at app level there.
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            DB::statement('
+                ALTER TABLE shopping_carts
+                ADD CONSTRAINT chk_userid_xor_guesttoken
+                CHECK (
+                    (user_id IS NOT NULL AND guest_token IS NULL) OR
+                    (user_id IS NULL AND guest_token IS NOT NULL)
+                )
+            ');
+        }
     }
 
     /**

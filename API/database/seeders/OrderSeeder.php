@@ -21,33 +21,33 @@ class OrderSeeder extends Seeder
 
     public function run(): void
     {
-        // [e-mail, status, criado há N dias, atualizado há N dias, itens]
+        // [e-mail, status, criado há N dias, atualizado há N dias, transportadora, frete, itens]
         // Item: [sku, quantidade, preço pago (null = preço atual)]
         $orders = [
-            ['cliente1@portaleletro.test', self::DELIVERED, 30, 24, [
+            ['cliente1@portaleletro.test', self::DELIVERED, 30, 24, 'correios', 9.78, [
                 ['MCU-ESP32-DEV', 2, null],
                 ['SEN-DHT22', 1, null],
                 ['KIT-JUMPERS-120', 1, null],
                 ['MCU-STM32-BLUEPILL', 1, null], // hoje com estoque zero
             ]],
-            ['cliente1@portaleletro.test', self::PENDING_PAYMENT, 1, 1, [
+            ['cliente1@portaleletro.test', self::PENDING_PAYMENT, 1, 1, 'loggi', 10.33, [
                 ['MCU-UNO-R3', 1, null],
                 ['DRV-L298N', 2, null],
             ]],
-            ['cliente2@portaleletro.test', self::PAID, 3, 2, [
+            ['cliente2@portaleletro.test', self::PAID, 3, 2, 'azul', 11.55, [
                 ['MOT-SERVO-MG996R', 2, null],
                 ['DRV-A4988', 2, null],
             ]],
-            ['cliente2@portaleletro.test', self::SHIPPED, 6, 4, [
+            ['cliente2@portaleletro.test', self::SHIPPED, 6, 4, 'correios', 0.00, [ // frete grátis acima de R$250
                 ['MCU-MEGA-2560', 1, null],
                 ['MOT-NEMA17', 1, null],
                 ['MOT-SERVO-SG90', 4, 14.90], // preço atual: 16.90
             ]],
-            ['cliente3@portaleletro.test', self::CANCELLED, 12, 11, [
+            ['cliente3@portaleletro.test', self::CANCELLED, 12, 11, 'azul', 11.55, [
                 ['COM-LORA-RA02', 1, null],
                 ['COM-OLED-096', 1, null],
             ]],
-            ['cliente3@portaleletro.test', self::DELIVERED, 20, 15, [
+            ['cliente3@portaleletro.test', self::DELIVERED, 20, 15, 'loggi', 10.33, [
                 ['KIT-CHASSI-2WD', 1, null],
                 ['MOT-DC-TT', 2, null],
                 ['DRV-TB6612FNG', 1, null],
@@ -56,7 +56,7 @@ class OrderSeeder extends Seeder
             ]],
         ];
 
-        foreach ($orders as [$email, $status, $createdDaysAgo, $updatedDaysAgo, $items]) {
+        foreach ($orders as [$email, $status, $createdDaysAgo, $updatedDaysAgo, $carrier, $shippingPrice, $items]) {
             $createdAt = now()->subDays($createdDaysAgo);
             $updatedAt = now()->subDays($updatedDaysAgo);
             $userId = DB::table('users')->where('email', $email)->value('id');
@@ -67,6 +67,8 @@ class OrderSeeder extends Seeder
                 'user_id' => $userId,
                 'address_id' => $address?->id,
                 'address_snapshot' => $address?->address,
+                'carrier' => $carrier,
+                'shipping_price' => $shippingPrice,
                 'created_at' => $createdAt,
                 'updated_at' => $updatedAt,
             ]);

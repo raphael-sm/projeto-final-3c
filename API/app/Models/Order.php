@@ -14,6 +14,8 @@ class Order extends Model
         'user_id',
         'address_id',
         'address_snapshot',
+        'carrier',
+        'shipping_price',
     ];
 
     public function user(): BelongsTo

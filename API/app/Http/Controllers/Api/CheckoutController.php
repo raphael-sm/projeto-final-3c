@@ -31,6 +31,9 @@ class CheckoutController extends Controller
         $data = $request->validate([
             'address_id' => ['nullable', 'integer', Rule::exists('addresses', 'id')],
             'address' => ['nullable', 'string', 'max:255'],
+            // Shipping chosen at checkout; snapshotted onto the order.
+            'carrier' => ['nullable', 'string', Rule::in(['correios', 'loggi', 'azul'])],
+            'shipping_price' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
         ]);
 
         $cart = $this->carts->resolveFor($request->user(), $request->input('guest_token'));

@@ -10,6 +10,7 @@ use App\Services\AddressService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use RuntimeException;
 
 class AddressController extends Controller
 {
@@ -17,38 +18,43 @@ class AddressController extends Controller
     {
     }
 
+    /** LGPD: returns only the addresses of the authenticated user. */
     public function index(Request $request): JsonResponse
     {
         return response()->json(AddressResource::collection(
-            $request->user() ? $this->service->visibleTo($request->user()) : $this->service->all()
+            $this->service->visibleTo($request->user())
         ));
     }
 
     public function store(StoreAddressRequest $request): JsonResponse
     {
-        $address = $this->service->create($request->validated());
+        try {
+            $address = $this->service->create($request->user(), $request->validated());
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         return response()->json(new AddressResource($address), Response::HTTP_CREATED);
     }
 
-    public function show(int|string $id): JsonResponse
+    public function show(Request $request, int|string $id): JsonResponse
     {
-        $address = $this->service->find($id);
+        $address = $this->service->findOwnedBy($id, $request->user());
 
         return response()->json(new AddressResource($address));
     }
 
     public function update(UpdateAddressRequest $request, int|string $id): JsonResponse
     {
-        $address = $this->service->find($id);
+        $address = $this->service->findOwnedBy($id, $request->user());
         $address = $this->service->update($address, $request->validated());
 
         return response()->json(new AddressResource($address));
     }
 
-    public function destroy(int|string $id): Response
+    public function destroy(Request $request, int|string $id): Response
     {
-        $address = $this->service->find($id);
+        $address = $this->service->findOwnedBy($id, $request->user());
 
         $this->service->delete($address);
 
