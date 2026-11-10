@@ -103,3 +103,21 @@ export const mockProduct = {
   categoryId: 1,
   images: [{ id: 1, url: "", position: 0 }, { id: 2, url: "", position: 1 }], // URLs das fotos
 };
+
+// Carrinho: frete fixo de exemplo e endereços usados só se a API falhar.
+export const mockCartConfig = { shipping: 9.99, installments: 12 };
+export const mockAddresses = [
+  { id: "1", label: "Endereço Padrão", text: "Avenida Presidente Juscelino Kubitschek, 2041, Vila Olímpia, São Paulo - SP", isDefault: true },
+];
+
+// Checkout: taxas fixas de frete (TODO: trocar por cotação real da API). Frete grátis nos Correios
+// quando o valor dos produtos passa de `freeShippingFrom`.
+export const mockCheckoutConfig = {
+  freeShippingFrom: 250,
+  freeShippingCarrier: "correios",
+  shippingOptions: [
+    { id: "correios", name: "Correios", days: 3, price: 9.78 },
+    { id: "loggi", name: "Loggi", days: 3, price: 10.33 },
+    { id: "azul", name: "Azul Cargo Express", days: 2, price: 11.55 },
+  ],
+};

@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Address;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use RuntimeException;
 
 class AddressService
 {
@@ -15,6 +17,24 @@ class AddressService
     public function find(int|string $id): Address
     {
         return Address::findOrFail($id);
+    }
+
+    /** Addresses of the authenticated user (admins see all). */
+    public function visibleTo(User $user): Collection
+    {
+        if ($user->role?->name === 'admin') {
+            return $this->all();
+        }
+
+        return Address::where('user_id', $user->id)->get();
+    }
+
+    /** @throws RuntimeException when the address belongs to someone else */
+    public function assertOwnedBy(Address $address, User $user): void
+    {
+        if ($address->user_id !== $user->id) {
+            throw new RuntimeException('Este endereço não pertence a você.');
+        }
     }
 
     public function create(array $data): Address

@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreOrderRequest;
-use App\Http\Requests\UpdateOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Services\OrderService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
+use InvalidArgumentException;
+use RuntimeException;
 
 class OrderController extends Controller
 {
@@ -16,37 +18,48 @@ class OrderController extends Controller
     {
     }
 
-    public function index(): JsonResponse
+    /** Admins see all orders; users only their own. */
+    public function index(Request $request): JsonResponse
     {
-        return response()->json(OrderResource::collection($this->service->all()));
+        return response()->json(OrderResource::collection($this->service->visibleTo($request->user())));
     }
 
-    public function store(StoreOrderRequest $request): JsonResponse
+    public function show(Request $request, int|string $id): JsonResponse
     {
-        $order = $this->service->create($request->validated());
-
-        return response()->json(new OrderResource($order), Response::HTTP_CREATED);
-    }
-
-    public function show(int|string $id): JsonResponse
-    {
-        $order = $this->service->find($id);
+        try {
+            $order = $this->service->findVisibleTo($request->user(), $id);
+        } catch (RuntimeException $e) {
+            abort(Response::HTTP_FORBIDDEN, $e->getMessage());
+        }
 
         return response()->json(new OrderResource($order));
     }
 
-    public function update(UpdateOrderRequest $request, int|string $id): JsonResponse
+    /** Admin-only lifecycle transition: body { status: paid|shipped|delivered }. */
+    public function update(Request $request, int|string $id): JsonResponse
     {
-        $order = $this->service->find($id);
-        $order = $this->service->update($order, $request->validated());
+        $data = $request->validate([
+            'status' => ['required', 'string', Rule::in(['paid', 'shipped', 'delivered'])],
+        ]);
+
+        try {
+            $order = $this->service->transitionStatus($this->service->find($id), $data['status']);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         return response()->json(new OrderResource($order));
     }
 
-    public function destroy(int|string $id): Response
+    /** User cancels own order (restores stock); admin can cancel any cancellable order. */
+    public function destroy(Request $request, int|string $id): Response
     {
-        $order = $this->service->find($id);
-        $this->service->delete($order);
+        try {
+            $order = $this->service->findVisibleTo($request->user(), $id);
+            $this->service->cancel($order);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         return response()->noContent();
     }

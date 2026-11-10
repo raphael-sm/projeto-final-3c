@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateAddressRequest;
 use App\Http\Resources\AddressResource;
 use App\Services\AddressService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class AddressController extends Controller
@@ -16,9 +17,11 @@ class AddressController extends Controller
     {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json(AddressResource::collection($this->service->all()));
+        return response()->json(AddressResource::collection(
+            $request->user() ? $this->service->visibleTo($request->user()) : $this->service->all()
+        ));
     }
 
     public function store(StoreAddressRequest $request): JsonResponse

@@ -8,9 +8,12 @@ import ProductCard from "./components/ProductCard";
 import Store from "./components/Store";
 import ProductPage from "./components/ProductPage";
 import LoginModal from "./components/LoginModal";
+import CartPage from "./components/CartPage";
+import CheckoutPage from "./components/CheckoutPage";
 import Footer from "./components/Footer";
-import { mockHome, mockStore, mockProduct, mockUser, mockCart } from "./data/mock";
-import { fetchStoreData, fetchProductData, login } from "./data/api";
+import { mockHome, mockStore, mockProduct, mockUser } from "./data/mock";
+import { useCart, cartTotals } from "./data/cart";
+import { fetchStoreData, fetchProductData, login, register, fetchMe, logout as apiLogout, mergeCartAfterAuth } from "./data/api";
 
 // Monta a home a partir da API: categorias reais, destaques aleatórios e novidades
 // (produtos mais recentes = maior id). Hero, benefícios e rodapé continuam do mock
@@ -44,18 +47,32 @@ async function fetchStore() {
 const [section, slug] = window.location.pathname.split("/").filter(Boolean);
 const isStore = section === "loja" || section === "categoria";
 const isProduct = section === "produto";
+const isCart = section === "carrinho";
+const isCheckout = section === "checkout";
 
 export default function App() {
   const [home, setHome] = useState(mockHome);
   const [store, setStore] = useState(mockStore);
   const [product, setProduct] = useState(mockProduct);
-  const [cartTotal, setCartTotal] = useState(mockCart.total);
-  const [session, setSession] = useState(null); // usuário logado: { name }
+  const cart = useCart(); // itens persistidos no localStorage
+  const cartTotal = cartTotals(cart.items).cashSubtotal;
+  const [session, setSession] = useState(null); // usuário logado: { name, email, role }
+  const [sessionReady, setSessionReady] = useState(false); // true depois de tentar restaurar a sessão
   const [loginOpen, setLoginOpen] = useState(false);
+
+  // Restaura a sessão salva (token do localStorage) ao abrir a página.
+  useEffect(() => {
+    fetchMe().then((u) => u && setSession(u)).catch(() => {}).finally(() => setSessionReady(true));
+  }, []);
 
   const handleLogin = async (credentials) => {
     setSession(await login(credentials)); // lança erro se falhar; o popup mostra a mensagem
+    await mergeCartAfterAuth(); // junta o carrinho de convidado ao do usuário
     setLoginOpen(false);
+  };
+  const handleLogout = async () => {
+    await apiLogout();
+    setSession(null);
   };
   const user = session ? { greeting: "Bem-Vindo(a)", action: session.name } : mockUser;
 
@@ -77,16 +94,21 @@ export default function App() {
   return (
     <>
       <Header user={user} cartTotal={cartTotal} onSearch={(q) => console.log("buscar:", q)}
-        onLogin={() => !session && setLoginOpen(true)} />
+        onCart={() => window.location.assign("/carrinho")}
+        onLogin={() => (session ? handleLogout() : setLoginOpen(true))} />
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSubmit={handleLogin}
         onSignup={() => console.log("cadastro")} />
       {isProduct ? (
         <ProductPage
           product={product}
           related={related}
-          onAddToCart={(p) => setCartTotal((t) => t + p.price)} // carrinho em memória; troque por chamada à API
-          onBuyNow={(p) => console.log("comprar:", p)}
+          onAddToCart={(p) => cart.add(p)}
+          onBuyNow={(p) => { cart.add(p); window.location.assign("/carrinho"); }}
         />
+      ) : isCheckout ? (
+        <CheckoutPage cart={cart} session={session} ready={sessionReady} onRequireLogin={() => setLoginOpen(true)} />
+      ) : isCart ? (
+        <CartPage cart={cart} session={session} onRequireLogin={() => setLoginOpen(true)} />
       ) : isStore ? (
         <Store slug={slug} {...store} />
       ) : (

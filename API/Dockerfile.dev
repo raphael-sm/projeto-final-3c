@@ -12,10 +12,14 @@ WORKDIR /app
 
 COPY . .
 
-RUN composer validate --no-check-publish \
+RUN chmod +x ./entrypoint.sh
+
+RUN composer validate --strict --no-check-publish \
     && composer install --no-interaction --prefer-dist \
     && composer check-platform-reqs
 
 EXPOSE 8000
+
+ENTRYPOINT ["./entrypoint.sh"]
 
 CMD ["php", "artisan", "serve", "--host=0.0.0.0"]

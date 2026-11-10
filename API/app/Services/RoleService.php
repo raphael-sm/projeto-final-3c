@@ -17,6 +17,11 @@ class RoleService
         return Role::findOrFail($id);
     }
 
+    public function findByName(string $name): Role
+    {
+        return Role::where('name', $name)->firstOrFail();
+    }
+
     public function create(array $data): Role
     {
         return Role::create($data);
