@@ -13,7 +13,7 @@ export default function ProductPage({ product, related = [], onAddToCart, onBuyN
   const [open, setOpen] = useState(false);
 
   useEffect(() => { setSel(0); setOpen(false); }, [product.id]);
-  useEffect(() => { document.title = `${name} | Logoipsum Eletrônicos`; }, [name]);
+  useEffect(() => { document.title = `${name} | Portal Eletro`; }, [name]);
 
   const current = images[sel] ?? images[0];
   const isLong = about.length > SUMMARY_LIMIT;

@@ -14,7 +14,7 @@ export default function CartPage({ cart, session, onRequireLogin, config = mockC
   // TODO: trocar por cotação real de frete (por endereço/itens) quando a API tiver.
   const totals = useMemo(() => cartTotals(items, config.shipping), [items, config.shipping]);
 
-  useEffect(() => { document.title = "Meu Carrinho | Logoipsum Eletrônicos"; }, []);
+  useEffect(() => { document.title = "Meu Carrinho | Portal Eletro"; }, []);
 
   useEffect(() => {
     if (!session) { setAddresses([]); setAddressId(""); return; }

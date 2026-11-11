@@ -1,10 +1,13 @@
+import heroPic from '../assets/capa_inicial.jpg';
+import bigLogo from '../assets/logobig.png';
+
 // Dados de exemplo. Substitua por chamadas à sua API (veja App.jsx).
 export const mockHome = {
   hero: {
     highlight: "Tudo",
     title: "para o seu próximo projeto.",
     subtitle: "Controladores, Componentes e peças com 25% de desconto.",
-    image: "", // URL da imagem de fundo
+    image: heroPic, // URL da imagem de fundo
   },
   benefits: [
     { id: 1, icon: "tag", title: "10% OFF", subtitle: "no PIX" },
@@ -25,10 +28,11 @@ export const mockHome = {
     ["Sensor Temp./Um. DHT11", 7.99, 9.49], ["Módulo Relé 5V", 11.9, 14.9],
   ].map(([name, price, fullPrice], i) => ({ id: i + 1, name, price, fullPrice, rating: 4.5, reviews: 5, image: "" })),
   footer: {
+    logoSrc: bigLogo,
     address: ["Avenida Marechal Deodoro, 3838", "Centro - Ribeirão Preto, SP", "CEP 14714-530"],
-    company: ["Logoipsum Eletrônicos", "CNPJ: 76.803.621/0001-75"],
+    company: ["Portal Eletro", "CNPJ: 76.803.621/0001-75"],
     phone: "(11) 3397-4600",
-    email: "contato@logoipsum.com",
+    email: "contato@portaleletro.com",
     hours: "Seg a Sex - 8h às 17h",
     notice: "Esta é uma loja fictícia, sem nenhum intuito de vender algo e foi criada como projeto institucional sem fins lucrativos.",
   },
@@ -80,7 +84,7 @@ export const mockProduct = {
   about:
     "O Arduino Uno SMD é uma versão econômica do mais conhecido Arduino Uno R3, onde apresenta exatamente a mesma pinagem, bem como performance de funcionamento já que também conta com o Microcontrolador Atmega328.\n" +
     "A diferença do SMD para o R3 deve se a tecnologia de encapsulamento do Chip Atmega328, no Arduino SMD a montagem é feita diretamente na superfície da Placa e ocupa uma área muito pequena, no Arduino UNO por sua vez, o encapsulamento é DIP, por meio de perfurações na placa.\n\n" +
-    "O Uno R3 é o modelo vendido e usado atualmente. Possui excelente custo/benefício, pois apresenta ótima quantidade de portas disponíveis e grande compatibilidade com os Shields Arduino. Agora ficou fácil comprar o seu Uno R3, com excelente preço na Logoipsum e envio imediato para todo o Brasil!\n" +
+    "O Uno R3 é o modelo vendido e usado atualmente. Possui excelente custo/benefício, pois apresenta ótima quantidade de portas disponíveis e grande compatibilidade com os Shields Arduino. Agora ficou fácil comprar o seu Uno R3, com excelente preço na Portal Eletro e envio imediato para todo o Brasil!\n" +
     "Arduino é uma Plataforma open hardware e possui seu próprio Ambiente de desenvolvimento baseado na linguagem C, simplificando a programação para iniciantes.",
   specs: {
     microcontrolador: "ATmega328",

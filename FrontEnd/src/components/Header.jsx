@@ -5,7 +5,7 @@ export default function Header({ logoSrc, user, cartTotal = 0, onSearch, onHelp,
   return (
     <header className="header">
       <a className="header__logo" href="/">
-        {logoSrc ? <img src={logoSrc} alt="Logoipsum" /> : <span>Logoipsum</span>}
+        {logoSrc ? <img src={logoSrc} alt="Portal Eletro" /> : <span>Portal Eletro</span>}
       </a>
       <input
         className="header__search"

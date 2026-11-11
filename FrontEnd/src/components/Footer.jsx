@@ -5,7 +5,7 @@ export default function Footer({ logoSrc, address = [], company = [], phone, ema
     <footer className="footer">
       <div className="footer__inner">
         <div className="footer__brand">
-          {logoSrc ? <img src={logoSrc} alt="Logoipsum" /> : <span className="footer__logo">Logoipsum</span>}
+          {logoSrc ? <img src={logoSrc} alt="Portal Eletro" /> : <span className="footer__logo">Portal Eletro</span>}
           <div className="footer__cols">
             <div>
               <p>{address.map((l) => <span key={l}>{l}<br /></span>)}</p>

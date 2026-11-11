@@ -45,13 +45,16 @@ export default function CheckoutPage({ cart, session, ready = true, onRequireLog
   const [submitError, setSubmitError] = useState("");
   const [order, setOrder] = useState(null);
 
-  useEffect(() => { document.title = "Checkout | Logoipsum Eletrônicos"; }, []);
+  useEffect(() => { document.title = "Checkout | Portal Eletro"; }, []);
 
-  // Pré-preenche nome e e-mail com os dados da conta.
+  // Pré-preenche nome, e-mail, documento e nascimento com os dados da conta
+  // (/auth/me traz cpf ou cnpj sem máscara + birthday, se CPF).
   useEffect(() => {
     if (!session) return;
     setName((v) => v || session.name || "");
     setEmail((v) => v || session.email || "");
+    if (session.cnpj) { setDocType("cnpj"); setDoc(maskCNPJ(session.cnpj)); }
+    else if (session.cpf) { setDocType("cpf"); setDoc(maskCPF(session.cpf)); setBirth(String(session.birthday ?? "").slice(0, 10)); }
   }, [session]);
 
   useEffect(() => {
@@ -106,7 +109,11 @@ export default function CheckoutPage({ cart, session, ready = true, onRequireLog
     try {
       // O pedido é montado a partir do carrinho do SERVIDOR: espelha os itens locais lá primeiro.
       await syncCart(items);
-      const result = await checkout({ addressId });
+      const result = await checkout({
+        addressId,
+        carrier: selected.id,
+        shippingPrice: selected.final, // frete efetivamente cobrado (0 quando grátis)
+      });
       clear();
       setOrder(result ?? {});
     } catch (err) {

@@ -1,5 +1,7 @@
 // Integração com a API Laravel. Ajuste VITE_API_URL no .env (veja .env.example).
-export const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+import { clearPersistedCart, replacePersistedCart } from "./cart";
+
+export const API = import.meta.env.VITE_API_URL ?? "http://localhost:80/api";
 
 // Aceita tanto [..] quanto { data: [..] } (API Resources do Laravel).
 const list = (json) => json?.data ?? json ?? [];
@@ -123,12 +125,20 @@ export async function login({ username, password }) {
   return json.user; // { id, name, email, role }
 }
 
-/** POST /api/auth/register */
-export async function register({ name, email, password }) {
+/** POST /api/auth/register
+ *  Mesmos nomes de campos do updateProfile (PATCH /auth/me) — ajuste aqui se o Laravel usar outros. */
+export async function register({ name, email, password, docType, doc, birth }) {
   const res = await fetch(`${API}/auth/register`, {
     method: "POST",
     headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      document_type: docType, // "cpf" | "cnpj"
+      document: String(doc ?? "").replace(/\D/g, ""),
+      birth_date: docType === "cpf" ? birth : null,
+    }),
   });
 
   const json = await res.json().catch(() => ({}));
@@ -140,12 +150,44 @@ export async function register({ name, email, password }) {
   return json.user;
 }
 
+/**
+ * Recarrega o carrinho LOCAL a partir do carrinho do SERVIDOR (do usuário
+ * logado, ou do convidado). Usado após login/registro e ao restaurar sessão,
+ * para que o carrinho da conta "volte" depois de um logout.
+ */
+export async function loadCartFromServer() {
+  try {
+    const sep = API.includes("?") ? "&" : "?";
+    const qs = getToken() ? "" : `${sep}guest_token=${encodeURIComponent(getGuestToken())}`;
+    const res = await fetch(`${API}/cart${qs}`, { headers: cartHeaders() });
+    if (!res.ok) return;
+    const json = await res.json();
+    const items = (json.items ?? [])
+      .filter((i) => i.product)
+      .map((i) => ({
+        id: i.product.id,
+        sku: i.product.sku ?? "",
+        name: i.product.name,
+        image: i.product.image ?? "",
+        price: Number(i.product.price),
+        fullPrice: Number(i.product.full_price ?? i.product.price),
+        stock: i.product.stock ?? 0,
+        quantity: i.quantity,
+      }));
+    replacePersistedCart(items);
+  } catch (err) {
+    console.warn("Falha ao recarregar o carrinho do servidor.", err);
+  }
+}
+
 /** POST /api/auth/logout */
 export async function logout() {
   try {
     await fetch(`${API}/auth/logout`, { method: "POST", headers: authHeaders() });
   } finally {
     clearToken();
+    resetGuestToken(); // próximo visitante começa um carrinho de convidado novo
+    clearPersistedCart(); // o carrinho NÃO sobrevive ao logout
   }
 }
 
@@ -188,6 +230,11 @@ export async function fetchAddresses() {
 // visitantes. Precisa ser o MESMO token em todas as chamadas de carrinho.
 // --------------------------------------------------------------------------
 const GUEST_KEY = "guest_token";
+/** Descarta o token de convidado atual (o carrinho ligado a ele deixa de ser usado). */
+export function resetGuestToken() {
+  localStorage.removeItem(GUEST_KEY);
+}
+
 export function getGuestToken() {
   let t = localStorage.getItem(GUEST_KEY);
   if (!t) {
@@ -299,7 +346,13 @@ export async function mergeCartAfterAuth() {
     headers: authHeaders(),
     body: JSON.stringify({ guest_token: getGuestToken() }),
   });
-  if (!res.ok) console.warn("Falha ao mesclar carrinho de convidado (seguindo com o do usuário).", res.status);
+  if (!res.ok) {
+    console.warn("Falha ao mesclar carrinho de convidado (seguindo com o do usuário).", res.status);
+    return;
+  }
+  // O carrinho de convidado virou parte da conta: descarta o token para que um
+  // futuro logout/login de OUTRO usuário não reaproveite o mesmo carrinho.
+  resetGuestToken();
 }
 
 /** POST /api/checkout — finaliza a compra do carrinho autenticado.
@@ -314,4 +367,106 @@ export async function checkout({ addressId, address } = {}) {
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.message ?? "Falha ao finalizar a compra.");
   return json.data ?? json;
+}
+
+// --------------------------------------------------------------------------
+// Perfil do usuário e CRUD de endereços
+// --------------------------------------------------------------------------
+const fromAddress = (a) => ({
+  id: String(a.id),
+  label: `Endereço #${a.id}`,
+  text: a.address,
+  isDefault: false,
+});
+
+const apiError = async (res, fallback) => {
+  const json = await res.json().catch(() => ({}));
+  return json?.message ?? Object.values(json?.errors ?? {})[0]?.[0] ?? fallback;
+};
+
+/** PATCH /api/auth/me — atualiza os dados pessoais do usuário autenticado.
+ *  ATENÇÃO: ajuste a rota e os nomes dos campos aqui se o Laravel usar outros. */
+export async function updateProfile({ name, email, docType, doc, birth }) {
+  const res = await fetch(`${API}/auth/me`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      name,
+      email,
+      document_type: docType, // "cpf" | "cnpj"
+      document: String(doc ?? "").replace(/\D/g, ""),
+      birth_date: docType === "cpf" ? birth : null,
+    }),
+  });
+  if (!res.ok) throw new Error(await apiError(res, `Falha ao salvar os dados (HTTP ${res.status}).`));
+  const json = await res.json().catch(() => ({}));
+  return json.data ?? json;
+}
+
+/** POST /api/addresses */
+export async function createAddress(address) {
+  const res = await fetch(`${API}/addresses`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ address }) });
+  if (!res.ok) throw new Error(await apiError(res, `Falha ao salvar o endereço (HTTP ${res.status}).`));
+  const json = await res.json();
+  return fromAddress(json.data ?? json);
+}
+
+/** PUT /api/addresses/:id */
+export async function updateAddress(id, address) {
+  const res = await fetch(`${API}/addresses/${id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify({ address }) });
+  if (!res.ok) throw new Error(await apiError(res, `Falha ao atualizar o endereço (HTTP ${res.status}).`));
+  const json = await res.json();
+  return fromAddress(json.data ?? json);
+}
+
+/** DELETE /api/addresses/:id */
+export async function deleteAddress(id) {
+  const res = await fetch(`${API}/addresses/${id}`, { method: "DELETE", headers: authHeaders() });
+  if (!res.ok && res.status !== 404) throw new Error(await apiError(res, `Falha ao remover o endereço (HTTP ${res.status}).`));
+}
+
+// --------------------------------------------------------------------------
+// Pedidos
+// --------------------------------------------------------------------------
+/** Normaliza o status da API para "preparing" | "shipped" | "delivered". */
+const orderStatus = (s) => {
+  const v = String(s ?? "").toLowerCase();
+  if (/deliver|entreg|finaliz|complet/.test(v)) return "delivered";
+  if (/ship|post|transit|sent|enviad/.test(v)) return "shipped";
+  return "preparing";
+};
+
+/** Converte um pedido da API. Tolera nomes de campos alternativos — ajuste aqui se o Laravel usar outros. */
+export const fromOrder = (o) => {
+  const items = (o.items ?? o.order_items ?? []).map((i) => {
+    const p = i.product ?? {};
+    return {
+      id: i.id,
+      name: i.name ?? i.product_name ?? p.name ?? `Produto #${i.product_id}`,
+      quantity: Number(i.quantity ?? 1),
+      price: Number(i.unit_price ?? i.price ?? p.price ?? 0),
+      image: mainImage(p.images) || i.image || "",
+    };
+  });
+  const shipping = Number(o.shipping_price ?? o.shipping_cost ?? o.shipping ?? 0);
+  const itemsTotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  return {
+    id: o.id,
+    createdAt: o.created_at ?? o.createdAt,
+    status: orderStatus(o.status),
+    carrier: String(o.carrier ?? o.shipping_carrier ?? "").toLowerCase(),
+    trackingUrl: o.tracking_url ?? null,
+    shipping,
+    total: Number(o.total ?? o.total_price ?? itemsTotal + shipping),
+    items,
+  };
+};
+
+/** GET /api/orders — pedidos do usuário autenticado, do mais recente ao mais antigo. */
+export async function fetchOrders() {
+  const res = await fetch(`${API}/orders`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Falha ao buscar pedidos (HTTP ${res.status})`);
+  return list(await res.json())
+    .map(fromOrder)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }

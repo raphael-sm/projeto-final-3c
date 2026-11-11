@@ -10,10 +10,16 @@ import ProductPage from "./components/ProductPage";
 import LoginModal from "./components/LoginModal";
 import CartPage from "./components/CartPage";
 import CheckoutPage from "./components/CheckoutPage";
+import ProfilePage from "./components/ProfilePage";
+import SignupPage from "./components/SignupPage";
+import OrdersPage from "./components/OrdersPage";
 import Footer from "./components/Footer";
 import { mockHome, mockStore, mockProduct, mockUser } from "./data/mock";
 import { useCart, cartTotals } from "./data/cart";
-import { fetchStoreData, fetchProductData, login, register, fetchMe, logout as apiLogout, mergeCartAfterAuth } from "./data/api";
+import { fetchStoreData, fetchProductData, login, register, fetchMe, logout as apiLogout, mergeCartAfterAuth, loadCartFromServer } from "./data/api";
+
+// Importar imagem do logo
+import logoImg from './assets/logo.png';
 
 // Monta a home a partir da API: categorias reais, destaques aleatórios e novidades
 // (produtos mais recentes = maior id). Hero, benefícios e rodapé continuam do mock
@@ -49,6 +55,9 @@ const isStore = section === "loja" || section === "categoria";
 const isProduct = section === "produto";
 const isCart = section === "carrinho";
 const isCheckout = section === "checkout";
+const isProfile = section === "perfil";
+const isOrders = section === "pedidos";
+const isSignup = section === "cadastro";
 
 export default function App() {
   const [home, setHome] = useState(mockHome);
@@ -62,13 +71,27 @@ export default function App() {
 
   // Restaura a sessão salva (token do localStorage) ao abrir a página.
   useEffect(() => {
-    fetchMe().then((u) => u && setSession(u)).catch(() => {}).finally(() => setSessionReady(true));
+    fetchMe()
+      .then(async (u) => {
+        if (!u) return;
+        setSession(u);
+        await loadCartFromServer(); // a sessão voltou: traz o carrinho da conta de volta
+      })
+      .catch(() => {})
+      .finally(() => setSessionReady(true));
   }, []);
 
   const handleLogin = async (credentials) => {
     setSession(await login(credentials)); // lança erro se falhar; o popup mostra a mensagem
     await mergeCartAfterAuth(); // junta o carrinho de convidado ao do usuário
+    await loadCartFromServer(); // recarrega o carrinho da conta (volto ao logar)
     setLoginOpen(false);
+  };
+  const handleSignup = async (data) => {
+    setSession(await register(data)); // lança erro se falhar; a página mostra a mensagem
+    await mergeCartAfterAuth(); // junta o carrinho de convidado ao do usuário
+    await loadCartFromServer(); // recarrega o carrinho da conta
+    window.location.assign("/");
   };
   const handleLogout = async () => {
     await apiLogout();
@@ -93,11 +116,11 @@ export default function App() {
 
   return (
     <>
-      <Header user={user} cartTotal={cartTotal} onSearch={(q) => console.log("buscar:", q)}
+      <Header logoSrc={logoImg} user={user} cartTotal={cartTotal} onSearch={(q) => console.log("buscar:", q)}
         onCart={() => window.location.assign("/carrinho")}
-        onLogin={() => (session ? handleLogout() : setLoginOpen(true))} />
+        onLogin={() => (session ? window.location.assign("/perfil") : setLoginOpen(true))} />
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} onSubmit={handleLogin}
-        onSignup={() => console.log("cadastro")} />
+        onSignup={() => window.location.assign("/cadastro")} />
       {isProduct ? (
         <ProductPage
           product={product}
@@ -105,6 +128,13 @@ export default function App() {
           onAddToCart={(p) => cart.add(p)}
           onBuyNow={(p) => { cart.add(p); window.location.assign("/carrinho"); }}
         />
+      ) : isSignup ? (
+        <SignupPage session={session} ready={sessionReady} onSubmit={handleSignup} onLogin={() => setLoginOpen(true)} />
+      ) : isProfile ? (
+        <ProfilePage session={session} ready={sessionReady} onRequireLogin={() => setLoginOpen(true)}
+          onLogout={handleLogout} onSaved={(data) => setSession((s) => ({ ...s, ...data }))} />
+      ) : isOrders ? (
+        <OrdersPage session={session} ready={sessionReady} onRequireLogin={() => setLoginOpen(true)} onLogout={handleLogout} />
       ) : isCheckout ? (
         <CheckoutPage cart={cart} session={session} ready={sessionReady} onRequireLogin={() => setLoginOpen(true)} />
       ) : isCart ? (

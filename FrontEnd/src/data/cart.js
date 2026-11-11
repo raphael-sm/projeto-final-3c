@@ -8,6 +8,26 @@ const read = () => {
   try { return JSON.parse(localStorage.getItem(KEY)) ?? []; } catch { return []; }
 };
 
+// Abas abertas se mantêm sincronizadas quando o carrinho é limpo/recarregado fora delas.
+let onExternalClear = null;
+let onExternalReplace = null;
+export function subscribeClear(fn) { onExternalClear = fn; }
+export function subscribeReplace(fn) { onExternalReplace = fn; }
+
+/** Apaga o carrinho persistido (usado no logout): tab atual e demais abas. */
+export function clearPersistedCart() {
+  try { localStorage.removeItem(KEY); } catch { /* storage indisponível */ }
+  try { localStorage.setItem(KEY, "[]"); } catch { /* idem */ }
+  onExternalClear?.();
+}
+
+/** Substitui o carrinho persistido por `items` (recarga pós-login) e propaga às abas. */
+export function replacePersistedCart(items) {
+  try { localStorage.setItem(KEY, JSON.stringify(items)); } catch { /* storage indisponível */ }
+  try { localStorage.setItem(KEY + "_replaced", String(Date.now())); } catch { /* idem */ }
+  onExternalReplace?.(items);
+}
+
 /** Item: { id, sku, name, image, price (à vista/PIX), fullPrice (cartão), stock, quantity } */
 export function useCart() {
   const [items, setItems] = useState(read);
@@ -18,8 +38,12 @@ export function useCart() {
 
   // Mantém várias abas sincronizadas.
   useEffect(() => {
-    const onStorage = (e) => e.key === KEY && setItems(read());
+    const onStorage = (e) => (e.key === KEY || e.key === KEY + "_replaced") && setItems(read());
     window.addEventListener("storage", onStorage);
+    // Logout em outra aba/módulo zera o carrinho nesta também.
+    subscribeClear(() => setItems([]));
+    // Recarga pós-login: assume o carrinho vindo do servidor.
+    subscribeReplace((items) => setItems(items));
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
