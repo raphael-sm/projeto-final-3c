@@ -82,14 +82,16 @@ export default function App() {
   }, []);
 
   const handleLogin = async (credentials) => {
-    setSession(await login(credentials)); // lança erro se falhar; o popup mostra a mensagem
-    await mergeCartAfterAuth(); // junta o carrinho de convidado ao do usuário
+    const session = await login(credentials); // lança erro se falhar; o popup mostra a mensagem
+    setSession(session);
+    await mergeCartAfterAuth(cart.items); // junta o carrinho local/de convidado ao do usuário
     await loadCartFromServer(); // recarrega o carrinho da conta (volto ao logar)
     setLoginOpen(false);
   };
   const handleSignup = async (data) => {
-    setSession(await register(data)); // lança erro se falhar; a página mostra a mensagem
-    await mergeCartAfterAuth(); // junta o carrinho de convidado ao do usuário
+    const session = await register(data); // lança erro se falhar; a página mostra a mensagem
+    setSession(session);
+    await mergeCartAfterAuth(cart.items); // junta o carrinho local/de convidado ao do usuário
     await loadCartFromServer(); // recarrega o carrinho da conta
     window.location.assign("/");
   };

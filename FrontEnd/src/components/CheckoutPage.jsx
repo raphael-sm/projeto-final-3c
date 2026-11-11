@@ -9,11 +9,12 @@ import {
 } from "../data/checkout";
 import correiosLogo from "../assets/correios-logo-png_seeklogo-251768.png";
 import azulLogo from "../assets/Azul_Cargo_Express_logo.png";
+import loggiLogo from "../assets/loggi.png";
 
 // Logotipos por transportadora (a Loggi não tem imagem no projeto: usa um wordmark em texto).
 const LOGOS = {
   correios: <img src={correiosLogo} alt="Correios" />,
-  loggi: <span className="ck__loggi" role="img" aria-label="Loggi">Loggi</span>,
+  loggi: <img src={loggiLogo} alt="Loggi" />,
   azul: <img src={azulLogo} alt="Azul Cargo Express" />,
 };
 

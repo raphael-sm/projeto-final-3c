@@ -77,9 +77,11 @@ class OrderService
             throw new RuntimeException('O carrinho está vazio.');
         }
 
-        if ($shippingAddress !== null && isset($shippingAddress['id'])) {
-            $address = $this->addresses->findOwnedBy($shippingAddress['id'], $user);
-            $shippingAddress = ['address' => $address->address];
+        // O controller envia address_id (chave da API), não id. Preserva
+        // carrier/shipping_price: o snapshot do frete vem junto no payload.
+        if (isset($shippingAddress['address_id'])) {
+            $address = $this->addresses->findOwnedBy($shippingAddress['address_id'], $user);
+            $shippingAddress['address'] = $address->address;
         }
 
         // Carrier chosen at checkout + shipping charged at purchase time.

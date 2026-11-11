@@ -256,6 +256,53 @@ function cartBody(extra = {}) {
   return getToken() ? extra : { guest_token: getGuestToken(), ...extra };
 }
 
+/**
+ * Como syncCart, mas FORÇANDO a resolução como CONVIDADO (headers sem
+ * Authorization + guest_token explícito). Usada logo antes do merge: os itens
+ * locais precisam ir para o carrinho de convidado, não para o da conta.
+ */
+async function syncCartAsGuest(items) {
+  const guestToken = getGuestToken();
+  const guestHeaders = { Accept: "application/json", "Content-Type": "application/json", "X-Guest-Token": guestToken };
+  const guestBody = (extra = {}) => ({ guest_token: guestToken, ...extra });
+  const wanted = new Map(items.map((i) => [Number(i.id), i]));
+
+  const sep = API.includes("?") ? "&" : "?";
+  const res = await fetch(`${API}/cart${sep}guest_token=${encodeURIComponent(guestToken)}`, { headers: guestHeaders });
+  if (!res.ok) throw new Error(`Falha ao consultar o carrinho (HTTP ${res.status})`);
+  const json = await res.json();
+  const server = (json.items ?? []).map((i) => ({ itemId: i.id, productId: i.product_id, quantity: i.quantity }));
+
+  // Remove do servidor o que não está mais no carrinho local.
+  for (const s of server) {
+    if (wanted.has(Number(s.productId))) continue;
+    await fetch(`${API}/cart/items/${s.itemId}`, {
+      method: "DELETE",
+      headers: guestHeaders,
+      body: JSON.stringify(guestBody()),
+    });
+  }
+
+  // Garante cada item local no carrinho de convidado.
+  for (const [productId, local] of wanted) {
+    const onServer = server.find((s) => Number(s.productId) === productId);
+    const response = onServer
+      ? await fetch(`${API}/cart/items/${onServer.itemId}`, {
+          method: "PATCH",
+          headers: guestHeaders,
+          body: JSON.stringify(guestBody({ quantity: local.quantity })),
+        })
+      : await fetch(`${API}/cart/items`, {
+          method: "POST",
+          headers: guestHeaders,
+          body: JSON.stringify(guestBody({ product_id: productId, quantity: local.quantity })),
+        });
+    if (!response.ok && response.status !== 422) {
+      throw new Error(await errMessage(response, `Falha ao atualizar "${local.name}" no carrinho (HTTP ${response.status}).`));
+    }
+  }
+}
+
 /** GET /api/cart — carrinho real do servidor (itens com product_id/quantity). */
 async function fetchServerCart() {
   const sep = API.includes("?") ? "&" : "?";
@@ -339,8 +386,27 @@ export async function syncCart(items) {
   }
 }
 
-/** Chamar LOGO APÓS login/registro: mescla o carrinho de convidado no carrinho do usuário. */
-export async function mergeCartAfterAuth() {
+/**
+ * Chamar LOGO APÓS login/registro: mescla o carrinho de convidado no carrinho do usuário.
+ *
+ * Importante: os itens adicionados como visitante vivem SÓ no localStorage até o
+ * checkout (syncCart é chamado apenas lá). Sem a sincronização abaixo, o carrinho
+ * de convidado no SERVIDOR estaria vazio no momento do merge — e o carrinho da
+ * conta vazio apagaria os itens locais logo depois (loadCartFromServer).
+ */
+export async function mergeCartAfterAuth(localItems = []) {
+  // 1. Espelha o carrinho LOCAL no carrinho de convidado do servidor (ainda
+  //    autenticado NÃO vale aqui: o corpo leva guest_token e os headers vão sem
+  //    Authorization, para o merge pegar exatamente esse carrinho de visitante).
+  if (localItems.length && getGuestToken()) {
+    try {
+      await syncCartAsGuest(localItems);
+    } catch (err) {
+      console.warn("Falha ao sincronizar o carrinho local antes da mesclagem.", err);
+    }
+  }
+
+  // 2. Mescla o carrinho de convidado no carrinho da conta (autenticado).
   const res = await fetch(`${API}/cart/merge`, {
     method: "POST",
     headers: authHeaders(),
@@ -358,11 +424,17 @@ export async function mergeCartAfterAuth() {
 /** POST /api/checkout — finaliza a compra do carrinho autenticado.
  *  A API aceita apenas `address_id` (ou `address` em texto) e monta o pedido
  *  a partir do carrinho do SERVIDOR, aplicando preços/estoque atuais. */
-export async function checkout({ addressId, address } = {}) {
+export async function checkout({ addressId, address, carrier, shippingPrice } = {}) {
   const res = await fetch(`${API}/checkout`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ ...(addressId ? { address_id: addressId } : {}), ...(address ? { address } : {}) }),
+    body: JSON.stringify({
+      ...(addressId ? { address_id: addressId } : {}),
+      ...(address ? { address } : {}),
+      // Frete escolhido no checkout: a API espera snake_case.
+      ...(carrier ? { carrier } : {}),
+      ...(shippingPrice != null ? { shipping_price: shippingPrice } : {}),
+    }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json?.message ?? "Falha ao finalizar a compra.");

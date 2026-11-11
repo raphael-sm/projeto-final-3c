@@ -29,6 +29,9 @@ class UpdateProfileRequest extends FormRequest
                 'sometimes',
                 'required',
                 'string',
+                // Must not belong to ANOTHER account (ignore own row).
+                Rule::unique('users', 'cpf')->ignore($this->user()?->id),
+                Rule::unique('users', 'cnpj')->ignore($this->user()?->id),
                 function (string $attribute, mixed $value, \Closure $fail): void {
                     $digits = preg_replace('/\D/', '', (string) $value) ?? '';
 

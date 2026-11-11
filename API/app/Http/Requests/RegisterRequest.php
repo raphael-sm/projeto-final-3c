@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Support\TaxId;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
@@ -27,6 +28,10 @@ class RegisterRequest extends FormRequest
             'document' => [
                 'required',
                 'string',
+                // Must not belong to another account — validated here so a
+                // duplicate arrives as a 422 field error, not a database 500.
+                Rule::unique('users', 'cpf'),
+                Rule::unique('users', 'cnpj'),
                 function (string $attribute, mixed $value, \Closure $fail): void {
                     $digits = preg_replace('/\D/', '', (string) $value) ?? '';
 
